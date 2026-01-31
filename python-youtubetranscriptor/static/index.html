@@ -1,0 +1,1140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Transcriptor</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-primary: #0a0a0b;
+      --bg-secondary: #141416;
+      --bg-tertiary: #1c1c1f;
+      --text-primary: #fafafa;
+      --text-secondary: #a1a1a6;
+      --text-muted: #636366;
+      --accent: #ff6b35;
+      --accent-glow: rgba(255, 107, 53, 0.4);
+      --border: rgba(255, 255, 255, 0.08);
+      --success: #34d399;
+      --error: #f87171;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    html {
+      font-size: 16px;
+      scroll-behavior: smooth;
+    }
+
+    body {
+      font-family: 'Space Mono', monospace;
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      min-height: 100vh;
+      overflow-x: hidden;
+      position: relative;
+    }
+
+    /* Grain overlay */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+      opacity: 0.03;
+      pointer-events: none;
+      z-index: 1000;
+    }
+
+    /* Ambient glow */
+    .ambient-glow {
+      position: fixed;
+      width: 600px;
+      height: 600px;
+      border-radius: 50%;
+      background: radial-gradient(circle, var(--accent-glow) 0%, transparent 70%);
+      filter: blur(100px);
+      pointer-events: none;
+      z-index: -1;
+      opacity: 0.5;
+      top: -200px;
+      right: -200px;
+      animation: float 20s ease-in-out infinite;
+    }
+
+    .ambient-glow-2 {
+      top: auto;
+      right: auto;
+      bottom: -300px;
+      left: -200px;
+      background: radial-gradient(circle, rgba(99, 102, 241, 0.3) 0%, transparent 70%);
+      animation-delay: -10s;
+    }
+
+    @keyframes float {
+      0%, 100% { transform: translate(0, 0) scale(1); }
+      25% { transform: translate(50px, 50px) scale(1.1); }
+      50% { transform: translate(0, 100px) scale(0.9); }
+      75% { transform: translate(-50px, 50px) scale(1.05); }
+    }
+
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 3rem 2rem 6rem;
+      position: relative;
+    }
+
+    /* Header */
+    header {
+      margin-bottom: 4rem;
+      animation: fadeUp 0.8s ease-out;
+    }
+
+    .logo {
+      font-family: 'Syne', sans-serif;
+      font-size: clamp(3rem, 10vw, 5rem);
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      line-height: 1;
+      margin-bottom: 1rem;
+      background: linear-gradient(135deg, var(--text-primary) 0%, var(--accent) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .tagline {
+      font-size: 0.875rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.2em;
+    }
+
+    /* Input section */
+    .input-section {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      border-radius: 1.5rem;
+      padding: 2rem;
+      margin-bottom: 2rem;
+      animation: fadeUp 0.8s ease-out 0.1s backwards;
+    }
+
+    .input-group {
+      margin-bottom: 1.5rem;
+    }
+
+    .input-group:last-child {
+      margin-bottom: 0;
+    }
+
+    label {
+      display: block;
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.15em;
+      margin-bottom: 0.75rem;
+    }
+
+    .video-input-wrapper {
+      display: flex;
+      gap: 1rem;
+      align-items: stretch;
+    }
+
+    input[type="text"] {
+      flex: 1;
+      background: var(--bg-tertiary);
+      border: 1px solid var(--border);
+      border-radius: 0.75rem;
+      padding: 1rem 1.25rem;
+      font-family: 'Space Mono', monospace;
+      font-size: 1rem;
+      color: var(--text-primary);
+      transition: all 0.3s ease;
+    }
+
+    input[type="text"]:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 4px var(--accent-glow);
+    }
+
+    input[type="text"]::placeholder {
+      color: var(--text-muted);
+    }
+
+    /* Format selector */
+    .format-selector {
+      display: flex;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+    }
+
+    .format-btn {
+      background: var(--bg-tertiary);
+      border: 1px solid var(--border);
+      border-radius: 0.5rem;
+      padding: 0.75rem 1.25rem;
+      font-family: 'Space Mono', monospace;
+      font-size: 0.875rem;
+      color: var(--text-secondary);
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .format-btn:hover {
+      background: var(--bg-primary);
+      color: var(--text-primary);
+    }
+
+    .format-btn.active {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: var(--bg-primary);
+    }
+
+    /* Buttons */
+    .btn {
+      background: var(--accent);
+      border: none;
+      border-radius: 0.75rem;
+      padding: 1rem 2rem;
+      font-family: 'Syne', sans-serif;
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--bg-primary);
+      cursor: pointer;
+      transition: all 0.3s ease;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .btn::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(135deg, rgba(255,255,255,0.2) 0%, transparent 50%);
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+
+    .btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 40px var(--accent-glow);
+    }
+
+    .btn:hover::before {
+      opacity: 1;
+    }
+
+    .btn:active {
+      transform: translateY(0);
+    }
+
+    .btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .btn-secondary {
+      background: var(--bg-tertiary);
+      color: var(--text-primary);
+    }
+
+    .btn-secondary:hover {
+      background: var(--bg-primary);
+      box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+    }
+
+    /* Actions row */
+    .actions {
+      display: flex;
+      gap: 1rem;
+      margin-top: 1.5rem;
+      flex-wrap: wrap;
+    }
+
+    /* Preview section */
+    .preview-section {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      border-radius: 1.5rem;
+      overflow: hidden;
+      margin-bottom: 2rem;
+      animation: fadeUp 0.8s ease-out 0.2s backwards;
+    }
+
+    .preview-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 1.25rem 1.5rem;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .preview-title {
+      font-family: 'Syne', sans-serif;
+      font-weight: 600;
+      font-size: 0.875rem;
+    }
+
+    .video-embed {
+      aspect-ratio: 16/9;
+      background: var(--bg-primary);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .video-embed iframe {
+      width: 100%;
+      height: 100%;
+      border: none;
+    }
+
+    .video-placeholder {
+      color: var(--text-muted);
+      font-size: 0.875rem;
+      text-align: center;
+      padding: 2rem;
+    }
+
+    .video-placeholder span {
+      display: block;
+      font-size: 3rem;
+      margin-bottom: 1rem;
+      opacity: 0.3;
+    }
+
+    /* Results section */
+    .results-section {
+      animation: fadeUp 0.8s ease-out 0.3s backwards;
+    }
+
+    .results-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1rem;
+    }
+
+    .results-title {
+      font-family: 'Syne', sans-serif;
+      font-weight: 700;
+      font-size: 1.5rem;
+    }
+
+    .transcript-output {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      border-radius: 1rem;
+      padding: 1.5rem;
+      min-height: 300px;
+      max-height: 600px;
+      overflow-y: auto;
+      font-size: 0.875rem;
+      line-height: 1.8;
+      color: var(--text-secondary);
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    .transcript-output::-webkit-scrollbar {
+      width: 8px;
+    }
+
+    .transcript-output::-webkit-scrollbar-track {
+      background: var(--bg-tertiary);
+      border-radius: 4px;
+    }
+
+    .transcript-output::-webkit-scrollbar-thumb {
+      background: var(--text-muted);
+      border-radius: 4px;
+    }
+
+    .transcript-output::-webkit-scrollbar-thumb:hover {
+      background: var(--text-secondary);
+    }
+
+    /* Available transcripts list */
+    .transcripts-list {
+      display: grid;
+      gap: 0.75rem;
+    }
+
+    .transcript-item {
+      background: var(--bg-tertiary);
+      border: 1px solid var(--border);
+      border-radius: 0.75rem;
+      padding: 1rem 1.25rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .transcript-item:hover {
+      border-color: var(--accent);
+      transform: translateX(4px);
+    }
+
+    .transcript-lang {
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+
+    .transcript-meta {
+      display: flex;
+      gap: 0.75rem;
+      font-size: 0.75rem;
+    }
+
+    .badge {
+      background: var(--bg-primary);
+      padding: 0.25rem 0.5rem;
+      border-radius: 0.25rem;
+      color: var(--text-muted);
+    }
+
+    .badge.generated {
+      background: rgba(99, 102, 241, 0.2);
+      color: #818cf8;
+    }
+
+    .badge.translatable {
+      background: rgba(52, 211, 153, 0.2);
+      color: var(--success);
+    }
+
+    .badge.hot-take {
+      background: rgba(255, 107, 53, 0.2);
+      color: var(--accent);
+    }
+
+    .badge.high {
+      background: rgba(52, 211, 153, 0.2);
+      color: var(--success);
+    }
+
+    .badge.medium {
+      background: rgba(250, 204, 21, 0.2);
+      color: #fbbf24;
+    }
+
+    .badge.low {
+      background: rgba(156, 163, 175, 0.2);
+      color: #9ca3af;
+    }
+
+    /* Analysis section */
+    .analysis-section {
+      margin-bottom: 2rem;
+    }
+
+    .analysis-card {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      border-radius: 1rem;
+      padding: 1.5rem;
+      margin-bottom: 1rem;
+    }
+
+    .analysis-card h3 {
+      font-family: 'Syne', sans-serif;
+      font-size: 1rem;
+      font-weight: 600;
+      margin-bottom: 1rem;
+      color: var(--text-primary);
+    }
+
+    .summary-text {
+      color: var(--text-secondary);
+      line-height: 1.7;
+      font-size: 0.9rem;
+    }
+
+    .claim-item {
+      background: var(--bg-tertiary);
+      border: 1px solid var(--border);
+      border-radius: 0.75rem;
+      padding: 1rem 1.25rem;
+      margin-bottom: 0.75rem;
+      transition: all 0.2s ease;
+    }
+
+    .claim-item.hot-take {
+      border-color: var(--accent);
+      border-left: 3px solid var(--accent);
+    }
+
+    .claim-text {
+      color: var(--text-primary);
+      font-size: 0.9rem;
+      line-height: 1.6;
+      margin-bottom: 0.75rem;
+    }
+
+    .claim-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      align-items: center;
+    }
+
+    .claim-speaker {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
+
+    .hot-take-reason {
+      font-size: 0.8rem;
+      color: var(--accent);
+      margin-top: 0.5rem;
+      font-style: italic;
+    }
+
+    .correction-item {
+      display: grid;
+      grid-template-columns: 1fr auto 1fr;
+      gap: 1rem;
+      align-items: center;
+      padding: 0.75rem;
+      background: var(--bg-tertiary);
+      border-radius: 0.5rem;
+      margin-bottom: 0.5rem;
+      font-size: 0.85rem;
+    }
+
+    .correction-original {
+      color: var(--error);
+      text-decoration: line-through;
+    }
+
+    .correction-arrow {
+      color: var(--text-muted);
+    }
+
+    .correction-new {
+      color: var(--success);
+    }
+
+    .correction-reason {
+      grid-column: 1 / -1;
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      font-style: italic;
+    }
+
+    .btn-analyze {
+      background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+    }
+
+    .btn-analyze:hover {
+      box-shadow: 0 10px 40px rgba(99, 102, 241, 0.4);
+    }
+
+    .tabs {
+      display: flex;
+      gap: 0.5rem;
+      margin-bottom: 1.5rem;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 0.5rem;
+    }
+
+    .tab-btn {
+      background: transparent;
+      border: none;
+      padding: 0.75rem 1.25rem;
+      font-family: 'Space Mono', monospace;
+      font-size: 0.875rem;
+      color: var(--text-muted);
+      cursor: pointer;
+      transition: all 0.2s ease;
+      border-radius: 0.5rem;
+    }
+
+    .tab-btn:hover {
+      color: var(--text-primary);
+      background: var(--bg-tertiary);
+    }
+
+    .tab-btn.active {
+      color: var(--text-primary);
+      background: var(--bg-tertiary);
+    }
+
+    .tab-content {
+      display: none;
+    }
+
+    .tab-content.active {
+      display: block;
+    }
+
+    .stats-row {
+      display: flex;
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+      flex-wrap: wrap;
+    }
+
+    .stat-card {
+      background: var(--bg-tertiary);
+      border: 1px solid var(--border);
+      border-radius: 0.75rem;
+      padding: 1rem 1.5rem;
+      text-align: center;
+      flex: 1;
+      min-width: 120px;
+    }
+
+    .stat-value {
+      font-family: 'Syne', sans-serif;
+      font-size: 2rem;
+      font-weight: 700;
+      color: var(--text-primary);
+    }
+
+    .stat-label {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+    }
+
+    .stat-card.hot-takes .stat-value {
+      color: var(--accent);
+    }
+
+    /* Status messages */
+    .status {
+      padding: 1rem 1.25rem;
+      border-radius: 0.75rem;
+      margin-bottom: 1.5rem;
+      font-size: 0.875rem;
+      display: none;
+    }
+
+    .status.visible {
+      display: block;
+      animation: fadeUp 0.3s ease-out;
+    }
+
+    .status.error {
+      background: rgba(248, 113, 113, 0.1);
+      border: 1px solid rgba(248, 113, 113, 0.3);
+      color: var(--error);
+    }
+
+    .status.success {
+      background: rgba(52, 211, 153, 0.1);
+      border: 1px solid rgba(52, 211, 153, 0.3);
+      color: var(--success);
+    }
+
+    .status.loading {
+      background: rgba(255, 107, 53, 0.1);
+      border: 1px solid rgba(255, 107, 53, 0.3);
+      color: var(--accent);
+    }
+
+    /* Loading spinner */
+    .spinner {
+      display: inline-block;
+      width: 16px;
+      height: 16px;
+      border: 2px solid transparent;
+      border-top-color: currentColor;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      margin-right: 0.5rem;
+      vertical-align: middle;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    @keyframes fadeUp {
+      from {
+        opacity: 0;
+        transform: translateY(20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    /* Copy button */
+    .copy-btn {
+      background: var(--bg-tertiary);
+      border: 1px solid var(--border);
+      border-radius: 0.5rem;
+      padding: 0.5rem 1rem;
+      font-family: 'Space Mono', monospace;
+      font-size: 0.75rem;
+      color: var(--text-secondary);
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .copy-btn:hover {
+      color: var(--text-primary);
+      border-color: var(--text-muted);
+    }
+
+    .copy-btn.copied {
+      color: var(--success);
+      border-color: var(--success);
+    }
+
+    /* Responsive */
+    @media (max-width: 640px) {
+      .container {
+        padding: 2rem 1rem 4rem;
+      }
+
+      .input-section {
+        padding: 1.5rem;
+      }
+
+      .video-input-wrapper {
+        flex-direction: column;
+      }
+
+      .actions {
+        flex-direction: column;
+      }
+
+      .btn {
+        width: 100%;
+        text-align: center;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="ambient-glow"></div>
+  <div class="ambient-glow ambient-glow-2"></div>
+
+  <div class="container">
+    <header>
+      <h1 class="logo">Transcriptor</h1>
+      <p class="tagline">YouTube Transcript Extraction</p>
+    </header>
+
+    <div class="input-section">
+      <div class="input-group">
+        <label>Video ID or URL</label>
+        <div class="video-input-wrapper">
+          <input 
+            type="text" 
+            id="videoInput" 
+            placeholder="dQw4w9WgXcQ or https://youtube.com/watch?v=..."
+            autocomplete="off"
+          >
+        </div>
+      </div>
+
+      <div class="input-group">
+        <label>Output Format</label>
+        <div class="format-selector">
+          <button class="format-btn active" data-format="json">JSON</button>
+          <button class="format-btn" data-format="text">Text</button>
+          <button class="format-btn" data-format="srt">SRT</button>
+          <button class="format-btn" data-format="vtt">VTT</button>
+        </div>
+      </div>
+
+      <div class="input-group">
+        <label>Language (optional)</label>
+        <input type="text" id="langInput" placeholder="en, de, es...">
+      </div>
+
+      <div class="actions">
+        <button class="btn" id="fetchBtn">Fetch Transcript</button>
+        <button class="btn btn-analyze" id="analyzeBtn">Analyze</button>
+        <button class="btn btn-secondary" id="listBtn">List Available</button>
+      </div>
+    </div>
+
+    <div class="preview-section" id="previewSection" style="display: none;">
+      <div class="preview-header">
+        <span class="preview-title">Video Preview</span>
+      </div>
+      <div class="video-embed" id="videoEmbed">
+        <div class="video-placeholder">
+          <span>▶</span>
+          Enter a video ID to preview
+        </div>
+      </div>
+    </div>
+
+    <div id="status" class="status"></div>
+
+    <div class="results-section" id="resultsSection" style="display: none;">
+      <div class="results-header">
+        <h2 class="results-title">Transcript</h2>
+        <button class="copy-btn" id="copyBtn">Copy</button>
+      </div>
+      <pre class="transcript-output" id="transcriptOutput"></pre>
+    </div>
+
+    <div class="results-section" id="listSection" style="display: none;">
+      <div class="results-header">
+        <h2 class="results-title">Available Transcripts</h2>
+      </div>
+      <div class="transcripts-list" id="transcriptsList"></div>
+    </div>
+
+    <div class="results-section analysis-section" id="analysisSection" style="display: none;">
+      <div class="results-header">
+        <h2 class="results-title">Analysis</h2>
+      </div>
+
+      <div class="stats-row" id="statsRow"></div>
+
+      <div class="tabs">
+        <button class="tab-btn active" data-tab="summary">Summary</button>
+        <button class="tab-btn" data-tab="claims">Claims</button>
+        <button class="tab-btn" data-tab="hotTakes">Hot Takes</button>
+        <button class="tab-btn" data-tab="corrections">Corrections</button>
+        <button class="tab-btn" data-tab="cleaned">Cleaned Text</button>
+      </div>
+
+      <div class="tab-content active" id="tab-summary">
+        <div class="analysis-card">
+          <p class="summary-text" id="summaryText"></p>
+        </div>
+      </div>
+
+      <div class="tab-content" id="tab-claims">
+        <div id="claimsList"></div>
+      </div>
+
+      <div class="tab-content" id="tab-hotTakes">
+        <div id="hotTakesList"></div>
+      </div>
+
+      <div class="tab-content" id="tab-corrections">
+        <div id="correctionsList"></div>
+      </div>
+
+      <div class="tab-content" id="tab-cleaned">
+        <div class="analysis-card">
+          <pre class="transcript-output" id="cleanedText" style="min-height: 200px;"></pre>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const videoInput = document.getElementById('videoInput');
+    const langInput = document.getElementById('langInput');
+    const fetchBtn = document.getElementById('fetchBtn');
+    const analyzeBtn = document.getElementById('analyzeBtn');
+    const listBtn = document.getElementById('listBtn');
+    const copyBtn = document.getElementById('copyBtn');
+    const status = document.getElementById('status');
+    const previewSection = document.getElementById('previewSection');
+    const videoEmbed = document.getElementById('videoEmbed');
+    const resultsSection = document.getElementById('resultsSection');
+    const transcriptOutput = document.getElementById('transcriptOutput');
+    const listSection = document.getElementById('listSection');
+    const transcriptsList = document.getElementById('transcriptsList');
+    const analysisSection = document.getElementById('analysisSection');
+    const formatBtns = document.querySelectorAll('.format-btn');
+    const tabBtns = document.querySelectorAll('.tab-btn');
+
+    let selectedFormat = 'json';
+    let currentTranscript = '';
+    let currentAnalysis = null;
+
+    // Format selector
+    formatBtns.forEach(btn => {
+      btn.addEventListener('click', () => {
+        formatBtns.forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        selectedFormat = btn.dataset.format;
+      });
+    });
+
+    // Tab switching
+    tabBtns.forEach(btn => {
+      btn.addEventListener('click', () => {
+        tabBtns.forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+        document.getElementById(`tab-${btn.dataset.tab}`).classList.add('active');
+      });
+    });
+
+    // Extract video ID from URL or raw ID
+    function extractVideoId(input) {
+      const patterns = [
+        /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([^&\s?]+)/,
+        /^([a-zA-Z0-9_-]{11})$/
+      ];
+      for (const pattern of patterns) {
+        const match = input.match(pattern);
+        if (match) return match[1];
+      }
+      return input.trim();
+    }
+
+    // Update video preview
+    function updatePreview(videoId) {
+      if (videoId && videoId.length === 11) {
+        previewSection.style.display = 'block';
+        videoEmbed.innerHTML = `<iframe src="https://www.youtube.com/embed/${videoId}" allowfullscreen></iframe>`;
+      } else {
+        previewSection.style.display = 'none';
+      }
+    }
+
+    videoInput.addEventListener('input', (e) => {
+      const videoId = extractVideoId(e.target.value);
+      updatePreview(videoId);
+    });
+
+    // Show status
+    function showStatus(message, type) {
+      status.textContent = message;
+      status.className = `status visible ${type}`;
+      if (type === 'loading') {
+        status.innerHTML = `<span class="spinner"></span>${message}`;
+      }
+    }
+
+    function hideStatus() {
+      status.className = 'status';
+    }
+
+    // Fetch transcript
+    fetchBtn.addEventListener('click', async () => {
+      const videoId = extractVideoId(videoInput.value);
+      if (!videoId) {
+        showStatus('Please enter a video ID or URL', 'error');
+        return;
+      }
+
+      const lang = langInput.value.trim() || 'en';
+      showStatus('Fetching transcript...', 'loading');
+      listSection.style.display = 'none';
+
+      try {
+        const response = await fetch(`/transcript/${videoId}?languages=${lang}&format=${selectedFormat}`);
+        
+        if (!response.ok) {
+          const error = await response.json();
+          throw new Error(error.detail || 'Failed to fetch transcript');
+        }
+
+        let data;
+        if (selectedFormat === 'json') {
+          data = await response.json();
+          currentTranscript = JSON.stringify(data, null, 2);
+        } else {
+          currentTranscript = await response.text();
+        }
+
+        transcriptOutput.textContent = currentTranscript;
+        resultsSection.style.display = 'block';
+        hideStatus();
+        showStatus('Transcript fetched successfully!', 'success');
+        setTimeout(hideStatus, 3000);
+      } catch (err) {
+        showStatus(err.message, 'error');
+        resultsSection.style.display = 'none';
+      }
+    });
+
+    // List available transcripts
+    listBtn.addEventListener('click', async () => {
+      const videoId = extractVideoId(videoInput.value);
+      if (!videoId) {
+        showStatus('Please enter a video ID or URL', 'error');
+        return;
+      }
+
+      showStatus('Loading available transcripts...', 'loading');
+      resultsSection.style.display = 'none';
+
+      try {
+        const response = await fetch(`/transcripts/${videoId}/list`);
+        
+        if (!response.ok) {
+          const error = await response.json();
+          throw new Error(error.detail || 'Failed to list transcripts');
+        }
+
+        const transcripts = await response.json();
+        
+        transcriptsList.innerHTML = transcripts.map(t => `
+          <div class="transcript-item" data-lang="${t.language_code}">
+            <span class="transcript-lang">${t.language}</span>
+            <div class="transcript-meta">
+              <span class="badge">${t.language_code}</span>
+              ${t.is_generated ? '<span class="badge generated">Auto-generated</span>' : ''}
+              ${t.is_translatable ? '<span class="badge translatable">Translatable</span>' : ''}
+            </div>
+          </div>
+        `).join('');
+
+        // Click to fetch that language
+        transcriptsList.querySelectorAll('.transcript-item').forEach(item => {
+          item.addEventListener('click', () => {
+            langInput.value = item.dataset.lang;
+            fetchBtn.click();
+          });
+        });
+
+        listSection.style.display = 'block';
+        hideStatus();
+      } catch (err) {
+        showStatus(err.message, 'error');
+        listSection.style.display = 'none';
+      }
+    });
+
+    // Copy to clipboard
+    copyBtn.addEventListener('click', async () => {
+      try {
+        await navigator.clipboard.writeText(currentTranscript);
+        copyBtn.textContent = 'Copied!';
+        copyBtn.classList.add('copied');
+        setTimeout(() => {
+          copyBtn.textContent = 'Copy';
+          copyBtn.classList.remove('copied');
+        }, 2000);
+      } catch (err) {
+        showStatus('Failed to copy', 'error');
+      }
+    });
+
+    // Enter key to fetch
+    videoInput.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') fetchBtn.click();
+    });
+
+    // Analyze transcript
+    analyzeBtn.addEventListener('click', async () => {
+      const videoId = extractVideoId(videoInput.value);
+      if (!videoId) {
+        showStatus('Please enter a video ID or URL', 'error');
+        return;
+      }
+
+      const lang = langInput.value.trim() || 'en';
+      showStatus('Analyzing transcript... This may take a minute.', 'loading');
+      resultsSection.style.display = 'none';
+      listSection.style.display = 'none';
+      analysisSection.style.display = 'none';
+
+      try {
+        const response = await fetch(`/analyze/${videoId}?languages=${lang}`, {
+          method: 'POST',
+        });
+        
+        if (!response.ok) {
+          const error = await response.json();
+          throw new Error(error.detail || 'Failed to analyze transcript');
+        }
+
+        currentAnalysis = await response.json();
+        renderAnalysis(currentAnalysis);
+        analysisSection.style.display = 'block';
+        hideStatus();
+        showStatus('Analysis complete!', 'success');
+        setTimeout(hideStatus, 3000);
+      } catch (err) {
+        showStatus(err.message, 'error');
+        analysisSection.style.display = 'none';
+      }
+    });
+
+    // Render analysis results
+    function renderAnalysis(data) {
+      const hotTakes = data.claims.filter(c => c.is_hot_take);
+      
+      // Stats
+      document.getElementById('statsRow').innerHTML = `
+        <div class="stat-card">
+          <div class="stat-value">${data.claims.length}</div>
+          <div class="stat-label">Claims</div>
+        </div>
+        <div class="stat-card hot-takes">
+          <div class="stat-value">${hotTakes.length}</div>
+          <div class="stat-label">Hot Takes</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value">${data.corrections_made.length}</div>
+          <div class="stat-label">Corrections</div>
+        </div>
+      `;
+
+      // Summary
+      document.getElementById('summaryText').textContent = data.summary;
+
+      // All claims
+      document.getElementById('claimsList').innerHTML = data.claims.map(c => renderClaim(c)).join('');
+
+      // Hot takes only
+      document.getElementById('hotTakesList').innerHTML = hotTakes.length 
+        ? hotTakes.map(c => renderClaim(c)).join('')
+        : '<p style="color: var(--text-muted);">No hot takes detected in this transcript.</p>';
+
+      // Corrections
+      document.getElementById('correctionsList').innerHTML = data.corrections_made.length
+        ? data.corrections_made.map(c => `
+            <div class="correction-item">
+              <span class="correction-original">${escapeHtml(c.original)}</span>
+              <span class="correction-arrow">→</span>
+              <span class="correction-new">${escapeHtml(c.corrected)}</span>
+              <span class="correction-reason">${escapeHtml(c.reason)}</span>
+            </div>
+          `).join('')
+        : '<p style="color: var(--text-muted);">No corrections needed.</p>';
+
+      // Cleaned text
+      document.getElementById('cleanedText').textContent = data.cleaned_transcript;
+    }
+
+    function renderClaim(c) {
+      const tags = c.topic_tags.map(t => `<span class="badge">${escapeHtml(t)}</span>`).join('');
+      return `
+        <div class="claim-item ${c.is_hot_take ? 'hot-take' : ''}">
+          <p class="claim-text">${escapeHtml(c.claim)}</p>
+          <div class="claim-meta">
+            ${c.speaker ? `<span class="claim-speaker">— ${escapeHtml(c.speaker)}</span>` : ''}
+            <span class="badge ${c.confidence_level}">${c.confidence_level}</span>
+            ${c.is_hot_take ? '<span class="badge hot-take">HOT TAKE</span>' : ''}
+            ${tags}
+          </div>
+          ${c.hot_take_reason ? `<p class="hot-take-reason">${escapeHtml(c.hot_take_reason)}</p>` : ''}
+        </div>
+      `;
+    }
+
+    function escapeHtml(text) {
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+  </script>
+</body>
+</html>
